@@ -234,6 +234,14 @@ model ItemTag {
 - Syntax highlighting for code
 - Inspired by **Notion, Linear, Raycast**
 
+## screenshots
+
+Refer the screenshots below as the base of the dashboard
+it does not have to be exact hust use it as a reference:
+
+- @context/screenshots/screenshots/Screenshot 2026-05-15 184016.png
+- @context/screenshots/screenshots/Screenshot 2026-05-15 184106.png
+
 ### Layout
 
 - **Collapsible sidebar** with filters & collections
