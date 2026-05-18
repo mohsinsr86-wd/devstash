@@ -1,6 +1,6 @@
 # Current Feature
 
-Dashboard UI Phase 2
+Prisma + Neon PostgreSQL Setup
 
 ## Status
 
@@ -8,52 +8,37 @@ Completed
 
 ## Goals
 
-- [x] Collapsible sidebar
-- [x] Items/types with links to /items/TYPE (e.g. /items/snippets)
-- [x] Favorite collections
-- [x] Most recent collections
-- [x] User avatar area at the bottom
-- [x] Drawer icon to open/close sidebar
-- [x] Always a drawer on mobile view
+- [x] Install Prisma 7 and initialize project
+- [x] Set up Neon PostgreSQL connection (serverless)
+- [x] Create initial schema based on data models in project-overview.md
+- [x] Include NextAuth models (Account, Session, VerificationToken)
+- [x] Add appropriate indexes and cascade deletes
+- [x] Create and apply initial migration (never push directly to production branch)
 
 ## References
 
-- @context/screenshots/dashboard-ui-main.png
 - @context/project-overview.md
-- @src/lib/mock-data.ts
-- @context/features/dashboard-phase-1-spec.md
-- @context/features/dashboard-phase-2-spec.md
-- @context/features/dashboard-phase-3-spec.md
+- @context/features/database-spec.md
+- Prisma docs: https://prisma.io/docs
+- Prisma 7 upgrade guide: https://www.prisma.io/docs/orm/more/upgrade-guides/upgrading-versions/upgrading-to-prisma-7
+- Prisma quickstart: https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/prisma-postgres
 
 ## Notes
 
-- Use mock data directly (no database yet)
-- Stack: Next.js 16 (App Router), React 19, Tailwind CSS v4, ESLint v9, ShadCN UI
+- Use Neon PostgreSQL (serverless)
+- Development branch via DATABASE_URL, production branch separate — always create migrations, never push directly unless specified
+- Prisma 7 has breaking changes — refer to the upgrade guide
+- Stack: Next.js 16 (App Router), React 19, Tailwind CSS v4, Prisma 7
 
 ## History
 
 ### Phase 1 (Completed)
 
-- Initialized Next.js 16 project with TypeScript strict mode
-- Cleaned up boilerplate: simplified page.tsx to just `<h1>devstash</h1>`, stripped layout.tsx of fonts, removed 5 boilerplate SVGs from public/
-- Created AGENTS.md with stack details, commands, and Next.js 16 breaking changes warning
-- Created CLAUDE.md with project description and commands referencing AGENTS.md
-- Initial commit `chore: initial next.js and tailwind setup` pushed to `https://github.com/mohsinsr86-wd/devstash.git`
-- Added `dark` class to root layout for dark mode by default
-- Created `/dashboard` route with layout: sidebar placeholder, top bar with search input, New Collection button, and New Item button, main area placeholder
-- Created `src/components/ui/button.tsx` (Base UI + CVA) and `src/components/ui/input.tsx` (Base UI)
-- Created `src/lib/utils.ts` (cn helper) and `src/lib/mock-data.ts` (users, collections, items, item types)
-- ShadCN UI initialized with Base UI components (Button, Input) and CVA variants
-- Dark mode set as default via `dark` class on `<html>` in root layout
-- Dashboard route at `/dashboard` with responsive flex layout (sidebar + main)
-- Top bar: search input (disabled, placeholder), New Collection button (outline), New Item button (primary + icon)
-- Sidebar and main area placeholders ready for Phase 2 content
-
-### Phase 2 (Completed)
-
-- Collapsible sidebar with `PanelLeftClose`/`PanelLeftOpen` toggle icon (desktop) and hamburger drawer (mobile)
-- Sidebar collapses to narrow icon-only strip on desktop, always full drawer overlay on mobile
-- Item types section: 7 types (Snippet, Prompt, Note, Command, File, Image, URL) each linking to `/items/{type}` with colored lucide icons and item counts
-- Collections section: nested dropdown with Favorites (star icon) and Recent (clock icon) subcategories, each showing item counts
-- User avatar area at sidebar bottom with initials fallback, name, and email
-- Item counts computed from mock data for both types and collections
+- Installed Prisma 7: `@prisma/client@7`, `prisma@7`, `@prisma/adapter-pg`, `pg`, `dotenv`, `@types/pg`
+- Added `"type": "module"` to `package.json` for Prisma 7 ESM support
+- Updated `tsconfig.json` target to `ES2023`
+- Created `prisma/schema.prisma` with 8 models: User, Account, Session, VerificationToken, Item, ItemType, Collection, Tag, ItemTag
+- Created `prisma.config.ts` with Neon PostgreSQL datasource
+- Created `src/lib/prisma.ts` with driver adapter (`PrismaPg`) instantiation
+- Created `.env` and `.env.example` with DATABASE_URL
+- Ran `prisma migrate dev --name init` — migration applied to Neon dev branch, all tables created with indexes and cascades
