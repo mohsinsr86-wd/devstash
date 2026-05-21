@@ -35,8 +35,8 @@ export default async function Dashboard() {
     getRecentCollections(),
   ]);
 
-  const pinnedItems = pinnedRaw.map(mapItem);
-  const recentItems = recentRaw.map(mapItem);
+  const pinnedItems = pinnedRaw.map(mapItem) as typeof import("@/lib/mock-data").items;
+  const recentItems = recentRaw.map(mapItem) as typeof import("@/lib/mock-data").items;
 
   const recentCollections = recentCollectionsRaw.map((c) => ({
     id: c.id,
