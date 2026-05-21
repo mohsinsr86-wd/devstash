@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -15,8 +16,10 @@ import {
   FileText,
   Terminal,
   Folder,
+  File,
   Image,
   LinkIcon,
+  StickyNote,
   Star,
   ChevronDown,
   ChevronRight,
@@ -34,11 +37,23 @@ const iconMap: Record<
   Code,
   Sparkles,
   FileText,
+  StickyNote,
   Terminal,
   Folder,
+  File,
   Image,
   Link: LinkIcon,
 };
+
+interface CollectionData {
+  id: string;
+  name: string;
+  description: string | null;
+  isFavorite: boolean;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface DashboardShellProps {
   itemTypes: Array<{
@@ -49,15 +64,7 @@ interface DashboardShellProps {
     isSystem: boolean;
     userId: string | null;
   }>;
-  collections: Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    isFavorite: boolean;
-    userId: string;
-    createdAt: string;
-    updatedAt: string;
-  }>;
+  collections: CollectionData[];
   currentUser: {
     id: string;
     email: string;
@@ -67,8 +74,8 @@ interface DashboardShellProps {
     createdAt: string;
     updatedAt: string;
   };
-  favoriteCollections: typeof import("@/lib/mock-data").collections;
-  recentCollections: typeof import("@/lib/mock-data").collections;
+  favoriteCollections: CollectionData[];
+  recentCollections: CollectionData[];
   itemCountByCollection: Record<string, number>;
   itemCountByType: Record<string, number>;
   pinnedItems: typeof import("@/lib/mock-data").items;
@@ -87,6 +94,13 @@ interface DashboardShellProps {
       name: string;
       icon: string;
       color: string;
+    }
+  >;
+  collectionTypeMap?: Record<
+    string,
+    {
+      types: Array<{ icon: string; color: string }>;
+      borderColor: string | null;
     }
   >;
 }
@@ -145,6 +159,7 @@ export function DashboardShell({
   stats,
   collectionNames,
   typeMeta,
+  collectionTypeMap = {},
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -260,9 +275,19 @@ export function DashboardShell({
                       <span className="flex-1 truncate text-foreground">
                         {type.name}
                       </span>
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {itemCountByType[type.id] || 0}
-                      </span>
+                      {currentUser.isPro &&
+                      (type.name === "file" || type.name === "image") ? (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-1.5 py-0 h-4 font-semibold text-muted-foreground/70 border-muted-foreground/20"
+                        >
+                          PRO
+                        </Badge>
+                      ) : (
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {itemCountByType[type.id] || 0}
+                        </span>
+                      )}
                     </>
                   )}
                 </Link>
@@ -493,11 +518,18 @@ export function DashboardShell({
             </h2>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {collections.map((col) => {
+                const typeInfo = collectionTypeMap[col.id];
+                const borderColor = typeInfo?.borderColor;
                 return (
                   <Link
                     key={col.id}
                     href={`/collections/${col.id}`}
-                    className="flex flex-col rounded-xl border border-border bg-card p-5 hover:border-ring/50 transition-colors min-h-[160px]"
+                    className="flex flex-col rounded-xl border bg-card p-5 hover:border-ring/50 transition-colors min-h-[160px]"
+                    style={
+                      borderColor
+                        ? { borderColor: `${borderColor}40` }
+                        : undefined
+                    }
                   >
                     <div className="flex items-center justify-between">
                       <p className="truncate text-sm font-semibold text-foreground">
@@ -515,26 +547,25 @@ export function DashboardShell({
                         {col.description}
                       </p>
                     )}
-                    <div className="mt-auto flex items-center gap-3 pt-3">
-                      <div
-                        className="flex size-7 items-center justify-center rounded"
-                        style={{ backgroundColor: `#3b82f620` }}
-                      >
-                        <Code className="size-4" style={{ color: "#3b82f6" }} />
+                    {typeInfo && typeInfo.types.length > 0 && (
+                      <div className="mt-auto flex items-center gap-2 pt-3">
+                        {typeInfo.types.map((t, i) => {
+                          const Icon = iconMap[t.icon] || FileText;
+                          return (
+                            <div
+                              key={i}
+                              className="flex size-7 items-center justify-center rounded"
+                              style={{ backgroundColor: `${t.color}20` }}
+                            >
+                              <Icon
+                                className="size-4"
+                                style={{ color: t.color }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div
-                        className="flex size-7 items-center justify-center rounded"
-                        style={{ backgroundColor: `#10b98120` }}
-                      >
-                        <FileText className="size-4" style={{ color: "#10b981" }} />
-                      </div>
-                      <div
-                        className="flex size-7 items-center justify-center rounded"
-                        style={{ backgroundColor: `#f59e0b20` }}
-                      >
-                        <Terminal className="size-4" style={{ color: "#f59e0b" }} />
-                      </div>
-                    </div>
+                    )}
                   </Link>
                 );
               })}
