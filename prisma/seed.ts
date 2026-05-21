@@ -1,3 +1,5 @@
+import "dotenv/config";
+import { hash } from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
@@ -9,365 +11,623 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Seeding database...\n");
 
-  await prisma.user.upsert({
-    where: { id: "user_001" },
-    update: {},
+  const passwordHash = await hash("12345678", 12);
+
+  const user = await prisma.user.upsert({
+    where: { email: "demo@devstash.io" },
+    update: { name: "Demo User", password: passwordHash, emailVerified: new Date() },
     create: {
-      id: "user_001",
-      email: "alex@devstash.io",
-      isPro: true,
+      email: "demo@devstash.io",
+      name: "Demo User",
+      password: passwordHash,
+      isPro: false,
+      emailVerified: new Date(),
     },
   });
-  console.log("  User: Alex Chen");
+  console.log("  User: Demo User (demo@devstash.io)");
 
   const itemTypes = [
-    { id: "type_snippet", name: "Snippet", icon: "Code", color: "#3b82f6", isSystem: true },
-    { id: "type_prompt", name: "Prompt", icon: "Sparkles", color: "#8b5cf6", isSystem: true },
-    { id: "type_note", name: "Note", icon: "FileText", color: "#10b981", isSystem: true },
-    { id: "type_command", name: "Command", icon: "Terminal", color: "#f59e0b", isSystem: true },
-    { id: "type_file", name: "File", icon: "Folder", color: "#6b7280", isSystem: true },
-    { id: "type_image", name: "Image", icon: "Image", color: "#ec4899", isSystem: true },
-    { id: "type_url", name: "URL", icon: "Link", color: "#06b6d4", isSystem: true },
+    { id: "type_snippet", name: "snippet", icon: "Code", color: "#3b82f6", isSystem: true },
+    { id: "type_prompt", name: "prompt", icon: "Sparkles", color: "#8b5cf6", isSystem: true },
+    { id: "type_command", name: "command", icon: "Terminal", color: "#f97316", isSystem: true },
+    { id: "type_note", name: "note", icon: "StickyNote", color: "#fde047", isSystem: true },
+    { id: "type_file", name: "file", icon: "File", color: "#6b7280", isSystem: true },
+    { id: "type_image", name: "image", icon: "Image", color: "#ec4899", isSystem: true },
+    { id: "type_link", name: "link", icon: "Link", color: "#10b981", isSystem: true },
   ];
 
   for (const type of itemTypes) {
     await prisma.itemType.upsert({
       where: { id: type.id },
-      update: {},
+      update: type,
       create: type,
     });
   }
   console.log("  Item Types: 7 system types");
 
-  const collections = [
-    {
-      id: "col_react",
+  // --- React Patterns ---
+  const reactPatterns = await prisma.collection.upsert({
+    where: { id: "col_react_patterns" },
+    update: {},
+    create: {
+      id: "col_react_patterns",
       name: "React Patterns",
-      description: "Reusable React component patterns and hooks",
+      description: "Reusable React patterns and hooks",
       isFavorite: true,
-      userId: "user_001",
+      userId: user.id,
     },
-    {
-      id: "col_python",
-      name: "Python Snippets",
-      description: "Handy Python utilities and scripts",
-      isFavorite: false,
-      userId: "user_001",
-    },
-    {
-      id: "col_prompts",
-      name: "AI Prompts",
-      description: "Curated prompts for coding and debugging",
-      isFavorite: true,
-      userId: "user_001",
-    },
-    {
-      id: "col_commands",
-      name: "Terminal Commands",
-      description: "Useful CLI one-liners and scripts",
-      isFavorite: false,
-      userId: "user_001",
-    },
-    {
-      id: "col_context",
-      name: "Context Files",
-      description: "Project context, AGENTS.md, and coding standards",
-      isFavorite: false,
-      userId: "user_001",
-    },
-    {
-      id: "col_git",
-      name: "Git Commands",
-      description: "Common git workflows, aliases, and troubleshooting",
-      isFavorite: true,
-      userId: "user_001",
-    },
-  ];
+  });
 
-  for (const col of collections) {
-    await prisma.collection.upsert({
-      where: { id: col.id },
-      update: {},
-      create: col,
-    });
-  }
-  console.log("  Collections: 6");
-
-  const items = [
-    {
-      id: "item_001",
-      title: "useDebounce hook",
+  await prisma.item.upsert({
+    where: { id: "item_react_hooks" },
+    update: {},
+    create: {
+      id: "item_react_hooks",
+      title: "Custom React Hooks Collection",
       contentType: "text",
-      content:
-        "import { useState, useEffect } from 'react';\n\nexport function useDebounce<T>(value: T, delay: number): T {\n  const [debouncedValue, setDebouncedValue] = useState<T>(value);\n\n  useEffect(() => {\n    const handler = setTimeout(() => setDebouncedValue(value), delay);\n    return () => clearTimeout(handler);\n  }, [value, delay]);\n\n  return debouncedValue;\n}",
-      description: "A custom React hook that debounces a value by a specified delay.",
-      isFavorite: true,
-      language: "typescript",
-      userId: "user_001",
-      typeId: "type_snippet",
-      collectionId: "col_react",
-      tags: ["hooks", "typescript", "performance"],
-    },
-    {
-      id: "item_002",
-      title: "Explain this function and suggest improvements",
-      contentType: "text",
-      content:
-        "Paste a function and I'll explain what it does, identify potential bugs, and suggest improvements for readability and performance.",
-      description: "AI prompt for code review and improvement suggestions.",
-      isFavorite: true,
-      language: null,
-      userId: "user_001",
-      typeId: "type_prompt",
-      collectionId: "col_prompts",
-      tags: ["ai", "code-review", "prompt"],
-    },
-    {
-      id: "item_003",
-      title: "Next.js 16 migration notes",
-      contentType: "text",
-      content:
-        "## Breaking Changes in Next.js 16\n\n- Middleware now runs on Edge runtime by default\n- `appDir` is the only supported directory structure\n- `next/head` removed — use Metadata API\n- Route handlers use standard Web APIs\n- `next/font` is now the default font system",
-      description: "Key points from the Next.js 16 migration guide.",
-      isFavorite: false,
-      language: "markdown",
-      userId: "user_001",
-      typeId: "type_note",
-      collectionId: null,
-      tags: ["nextjs", "migration", "reference"],
-    },
-    {
-      id: "item_004",
-      title: "Find large files recursively",
-      contentType: "text",
-      content: "find / -type f -size +100M -exec ls -lh {} \\; 2>/dev/null | sort -k5 -h",
-      description: "Lists all files larger than 100MB recursively, sorted by size.",
-      isFavorite: false,
-      language: "bash",
-      userId: "user_001",
-      typeId: "type_command",
-      collectionId: "col_commands",
-      tags: ["linux", "disk-usage", "cli"],
-    },
-    {
-      id: "item_005",
-      title: "Tailwind CSS v4 cheat sheet",
-      contentType: "text",
-      content:
-        "## Tailwind v4 Changes\n\n- CSS-first config: use `@import \"tailwindcss\"`\n- No `tailwind.config.*` file\n- `@theme` directive for design tokens\n- Container queries built-in\n- Dynamic utility values with `--value()`",
-      description: "Quick reference for Tailwind CSS v4 differences.",
-      isFavorite: false,
       isPinned: true,
-      language: "markdown",
-      userId: "user_001",
-      typeId: "type_note",
-      collectionId: null,
-      tags: ["tailwind", "css", "reference"],
-    },
-    {
-      id: "item_006",
-      title: "Generate a REST API endpoint with validation",
-      contentType: "text",
-      content:
-        "Create a TypeScript REST API endpoint using Next.js route handlers with Zod validation, proper error handling, and TypeScript types for request/response.",
-      description: "AI prompt for scaffolding API routes with validation.",
-      isFavorite: true,
-      language: null,
-      userId: "user_001",
-      typeId: "type_prompt",
-      collectionId: "col_prompts",
-      tags: ["ai", "api", "typescript", "nextjs"],
-    },
-    {
-      id: "item_007",
-      title: "Python list flatten un-nest",
-      contentType: "text",
-      content:
-        "def flatten(lst):\n    result = []\n    for item in lst:\n        if isinstance(item, list):\n            result.extend(flatten(item))\n        else:\n            result.append(item)\n    return result",
-      description: "Recursively flattens a nested list of arbitrary depth.",
-      isFavorite: false,
-      language: "python",
-      userId: "user_001",
+      content: `import { useState, useEffect, useCallback, useRef } from 'react';
+
+// Debounce a value by a given delay
+export function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+}
+
+// Persist state to localStorage
+export function useLocalStorage<T>(key: string, initialValue: T) {
+  const [value, setValue] = useState<T>(() => {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : initialValue;
+  });
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+  return [value, setValue] as const;
+}
+
+// Track previous value of a state
+export function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<T>();
+  useEffect(() => { ref.current = value; });
+  return ref.current;
+}`,
+      description: "Commonly used React hooks: useDebounce, useLocalStorage, usePrevious.",
+      language: "typescript",
+      userId: user.id,
       typeId: "type_snippet",
-      collectionId: "col_python",
-      tags: ["python", "recursion", "utilities"],
+      collectionId: reactPatterns.id,
     },
-    {
-      id: "item_008",
-      title: "Storybook setup guide",
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_react_components" },
+    update: {},
+    create: {
+      id: "item_react_components",
+      title: "Compound Components Pattern",
+      contentType: "text",
+      content: `import { createContext, useContext, useState, ReactNode } from 'react';
+
+interface TabsContextType {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+const TabsContext = createContext<TabsContextType | null>(null);
+
+function useTabs() {
+  const ctx = useContext(TabsContext);
+  if (!ctx) throw new Error('Tabs.* must be used inside <Tabs>');
+  return ctx;
+}
+
+export function Tabs({ defaultTab, children }: { defaultTab: string; children: ReactNode }) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  return (
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      {children}
+    </TabsContext.Provider>
+  );
+}
+
+Tabs.List = function TabsList({ children }: { children: ReactNode }) {
+  return <div className="flex gap-2 border-b">{children}</div>;
+};
+
+Tabs.Tab = function TabsTab({ id, children }: { id: string; children: ReactNode }) {
+  const { activeTab, setActiveTab } = useTabs();
+  const isActive = activeTab === id;
+  return (
+    <button
+      className={\`px-4 py-2 border-b-2 \${isActive ? 'border-blue-500 text-blue-600' : 'border-transparent'}\`}
+      onClick={() => setActiveTab(id)}
+    >
+      {children}
+    </button>
+  );
+};
+
+Tabs.Panel = function TabsPanel({ id, children }: { id: string; children: ReactNode }) {
+  const { activeTab } = useTabs();
+  if (activeTab !== id) return null;
+  return <div className="p-4">{children}</div>;
+};`,
+      description: "Compound component pattern using Context API — Tabs with List, Tab, and Panel sub-components.",
+      language: "typescript",
+      userId: user.id,
+      typeId: "type_snippet",
+      collectionId: reactPatterns.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_react_utils" },
+    update: {},
+    create: {
+      id: "item_react_utils",
+      title: "React Utility Functions",
+      contentType: "text",
+      content: `import { type ClassValue, clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+// Merge Tailwind classes safely
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+// Format a date relative to now
+export function timeAgo(date: Date | string): string {
+  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
+  const intervals = [
+    { label: 'year', seconds: 31536000 },
+    { label: 'month', seconds: 2592000 },
+    { label: 'week', seconds: 604800 },
+    { label: 'day', seconds: 86400 },
+    { label: 'hour', seconds: 3600 },
+    { label: 'minute', seconds: 60 },
+  ];
+  for (const { label, seconds: s } of intervals) {
+    const count = Math.floor(seconds / s);
+    if (count >= 1) return \`\${count} \${label}\${count > 1 ? 's' : ''} ago\`;
+  }
+  return 'just now';
+}
+
+// Truncate text with ellipsis
+export function truncate(str: string, maxLength: number): string {
+  if (str.length <= maxLength) return str;
+  return str.slice(0, maxLength - 3) + '...';
+}`,
+      description: "Handy React utility functions: class merging (cn), relative dates (timeAgo), text truncation.",
+      language: "typescript",
+      userId: user.id,
+      typeId: "type_snippet",
+      collectionId: reactPatterns.id,
+    },
+  });
+  console.log("  React Patterns: 3 snippets");
+
+  // --- AI Workflows ---
+  const aiWorkflows = await prisma.collection.upsert({
+    where: { id: "col_ai_workflows" },
+    update: {},
+    create: {
+      id: "col_ai_workflows",
+      name: "AI Workflows",
+      description: "AI prompts and workflow automations",
+      isFavorite: true,
+      userId: user.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_ai_review" },
+    update: {},
+    create: {
+      id: "item_ai_review",
+      title: "Comprehensive Code Review",
+      contentType: "text",
+      isPinned: true,
+      content: `You are a senior software engineer conducting a thorough code review. Analyze the following code and provide feedback on:
+
+1. **Bugs & Logic Errors** — Identify potential runtime errors, edge cases, and logical flaws.
+2. **Performance** — Point out inefficiencies, unnecessary re-renders, and optimization opportunities.
+3. **Security** — Flag any security vulnerabilities (XSS, injection, exposed secrets, etc.).
+4. **Readability** — Suggest naming improvements, better code organization, and clearer comments.
+5. **Best Practices** — Check adherence to framework and language conventions.
+
+For each finding, provide:
+- The specific line(s) affected
+- Severity: Critical / Medium / Low
+- A clear explanation of the issue
+- A concrete suggestion with corrected code`,
+      description: "AI prompt for performing a detailed code review covering bugs, performance, security, and best practices.",
+      language: null,
+      userId: user.id,
+      typeId: "type_prompt",
+      collectionId: aiWorkflows.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_ai_docs" },
+    update: {},
+    create: {
+      id: "item_ai_docs",
+      title: "Technical Documentation Generator",
+      contentType: "text",
+      content: `Generate comprehensive technical documentation for the following codebase. Structure your output as:
+
+## Overview
+- What does this module/component do?
+- What problem does it solve?
+
+## API Reference
+For each public function/component:
+- **Signature**: TypeScript type signature
+- **Parameters**: Table with name, type, default, description
+- **Returns**: Type and description
+- **Example**: Minimal usage example
+
+## Dependencies
+- List external packages with versions
+- Explain why each dependency is needed
+
+## Edge Cases
+- Document known limitations
+- Error handling behavior
+- Performance characteristics
+
+Use clear, concise language. Include code snippets for every example.`,
+      description: "AI prompt for generating structured technical documentation with API references, examples, and edge cases.",
+      language: null,
+      userId: user.id,
+      typeId: "type_prompt",
+      collectionId: aiWorkflows.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_ai_refactor" },
+    update: {},
+    create: {
+      id: "item_ai_refactor",
+      title: "Refactoring Assistant",
+      contentType: "text",
+      content: `I need to refactor the following code. Please analyze it and provide:
+
+1. **Current Architecture** — Briefly describe the existing structure and patterns.
+2. **Smells Identified** — List code smells with line references (duplication, long functions, tight coupling, etc.).
+3. **Refactoring Plan** — Step-by-step plan to improve the code without changing behavior.
+4. **Refactored Code** — The full refactored code with:
+   - Smaller, single-responsibility functions (max 30 lines)
+   - Proper TypeScript types (no \`any\`)
+   - Early returns instead of nested conditionals
+   - Descriptive variable and function names
+   - Proper error handling
+5. **Testing Strategy** — What tests should be written to verify the refactored code.
+
+Keep the same functionality. Prioritize readability and maintainability.`,
+      description: "AI prompt for systematic code refactoring — identifies smells, provides step-by-step plan, and refactored code.",
+      language: null,
+      userId: user.id,
+      typeId: "type_prompt",
+      collectionId: aiWorkflows.id,
+    },
+  });
+  console.log("  AI Workflows: 3 prompts");
+
+  // --- DevOps ---
+  const devops = await prisma.collection.upsert({
+    where: { id: "col_devops" },
+    update: {},
+    create: {
+      id: "col_devops",
+      name: "DevOps",
+      description: "Infrastructure and deployment resources",
+      isFavorite: true,
+      userId: user.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_devops_dockerfile" },
+    update: {},
+    create: {
+      id: "item_devops_dockerfile",
+      title: "Multi-stage Dockerfile for Next.js",
+      contentType: "text",
+      isPinned: true,
+      content: `# Stage 1: Dependencies
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+# Stage 3: Production
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+CMD ["node", "server.js"]`,
+      description: "Multi-stage Dockerfile for Next.js with standalone output, optimized for production with minimal image size.",
+      language: "docker",
+      userId: user.id,
+      typeId: "type_snippet",
+      collectionId: devops.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_devops_deploy" },
+    update: {},
+    create: {
+      id: "item_devops_deploy",
+      title: "Vercel deployment via CLI",
+      contentType: "text",
+      content: `# Deploy to Vercel with environment variables
+vercel deploy \\
+  --prod \\
+  --env DATABASE_URL="\${DATABASE_URL}" \\
+  --env NEXTAUTH_SECRET="\${NEXTAUTH_SECRET}" \\
+  --env NEXTAUTH_URL="\${NEXTAUTH_URL}" \\
+  --env AUTH_GITHUB_ID="\${AUTH_GITHUB_ID}" \\
+  --env AUTH_GITHUB_SECRET="\${AUTH_GITHUB_SECRET}"`,
+      description: "Vercel CLI deployment command with environment variable injection for production.",
+      language: "bash",
+      userId: user.id,
+      typeId: "type_command",
+      collectionId: devops.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_devops_ghactions" },
+    update: {},
+    create: {
+      id: "item_devops_ghactions",
+      title: "GitHub Actions Documentation",
       contentType: "url",
       content: null,
-      url: "https://storybook.js.org/docs/react/get-started",
-      description: "Official Storybook documentation for React project setup.",
-      isFavorite: false,
+      url: "https://docs.github.com/en/actions",
+      description: "Official GitHub Actions documentation — workflows, runners, marketplace actions, and CI/CD guides.",
       language: null,
-      userId: "user_001",
-      typeId: "type_url",
-      collectionId: null,
-      tags: ["storybook", "docs", "reference"],
+      userId: user.id,
+      typeId: "type_link",
+      collectionId: devops.id,
     },
-    {
-      id: "item_009",
-      title: "Prisma reset and reseed",
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_devops_dockerdocs" },
+    update: {},
+    create: {
+      id: "item_devops_dockerdocs",
+      title: "Docker Compose Reference",
+      contentType: "url",
+      content: null,
+      url: "https://docs.docker.com/compose/compose-file/",
+      description: "Complete Docker Compose file reference — services, networks, volumes, and all configuration options.",
+      language: null,
+      userId: user.id,
+      typeId: "type_link",
+      collectionId: devops.id,
+    },
+  });
+  console.log("  DevOps: 1 snippet, 1 command, 2 links");
+
+  // --- Terminal Commands ---
+  const terminalCommands = await prisma.collection.upsert({
+    where: { id: "col_terminal" },
+    update: {},
+    create: {
+      id: "col_terminal",
+      name: "Terminal Commands",
+      description: "Useful shell commands for everyday development",
+      userId: user.id,
+    },
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_term_git" },
+    update: {},
+    create: {
+      id: "item_term_git",
+      title: "Git squash and force push",
       contentType: "text",
-      content: "npx prisma db push --force-reset && npx prisma db seed",
-      description: "Quick command to reset the database and re-run seeds.",
-      isFavorite: true,
+      content: `# Squash last 3 commits into one
+git rebase -i HEAD~3
+
+# Force push after rebase (use with caution)
+git push --force-with-lease origin main`,
+      description: "Squash multiple commits into one and safely force push with lease to prevent overwriting remote changes.",
       language: "bash",
-      userId: "user_001",
+      userId: user.id,
       typeId: "type_command",
-      collectionId: "col_commands",
-      tags: ["prisma", "database", "cli"],
+      collectionId: terminalCommands.id,
     },
-    {
-      id: "item_010",
-      title: "Zustand store pattern",
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_term_docker" },
+    update: {},
+    create: {
+      id: "item_term_docker",
+      title: "Docker cleanup commands",
       contentType: "text",
-      content:
-        "import { create } from 'zustand';\n\ninterface CounterStore {\n  count: number;\n  increment: () => void;\n  decrement: () => void;\n  reset: () => void;\n}\n\nexport const useCounterStore = create<CounterStore>((set) => ({\n  count: 0,\n  increment: () => set((state) => ({ count: state.count + 1 })),\n  decrement: () => set((state) => ({ count: state.count - 1 })),\n  reset: () => set({ count: 0 }),\n}));",
-      description: "Minimal Zustand store boilerplate with TypeScript.",
-      isFavorite: false,
-      language: "typescript",
-      userId: "user_001",
-      typeId: "type_snippet",
-      collectionId: "col_react",
-      tags: ["zustand", "state-management", "typescript"],
-    },
-    {
-      id: "item_011",
-      title: "AGENTS.md template",
-      contentType: "text",
-      content:
-        "## Stack\n- Framework\n- Language\n- CSS\n\n## Commands\n| Command | Purpose |\n|---------|---------|\n| dev | Start dev server |",
-      description: "Template for project-level AGENTS.md with stack and commands.",
-      isFavorite: false,
-      language: "markdown",
-      userId: "user_001",
-      typeId: "type_note",
-      collectionId: "col_context",
-      tags: ["template", "documentation", "context"],
-    },
-    {
-      id: "item_012",
-      title: "ESLint flat config for Next.js",
-      contentType: "text",
-      content:
-        'import { dirname } from "path";\nimport { fileURLToPath } from "url";\nimport { FlatCompat } from "@eslint/eslintrc";\n\nconst __filename = fileURLToPath(import.meta.url);\nconst __dirname = dirname(__filename);\n\nconst compat = new FlatCompat({\n  baseDirectory: __dirname,\n});\n\nconst eslintConfig = [\n  ...compat.extends("next/core-web-vitals", "next/typescript"),\n];\n\nexport default eslintConfig;',
-      description: "ESLint v9 flat config for Next.js 16 with TypeScript.",
-      isFavorite: true,
-      language: "typescript",
-      userId: "user_001",
-      typeId: "type_snippet",
-      collectionId: "col_context",
-      tags: ["eslint", "nextjs", "typescript", "config"],
-    },
-    {
-      id: "item_013",
-      title: "Prettier config",
-      contentType: "text",
-      content:
-        '{\n  "semi": true,\n  "singleQuote": false,\n  "tabWidth": 2,\n  "trailingComma": "es5",\n  "printWidth": 100\n}',
-      description: "Standard Prettier configuration for TypeScript projects.",
-      isFavorite: false,
-      language: "json",
-      userId: "user_001",
-      typeId: "type_snippet",
-      collectionId: "col_context",
-      tags: ["prettier", "config", "formatting"],
-    },
-    {
-      id: "item_014",
-      title: "Git log with pretty format",
-      contentType: "text",
-      content: "git log --oneline --graph --decorate --all -20",
-      description: "Shows a decorated graph log of the last 20 commits across all branches.",
-      isFavorite: true,
+      content: `# Remove all stopped containers
+docker container prune -f
+
+# Remove all unused images
+docker image prune -a -f
+
+# Remove all unused volumes
+docker volume prune -f
+
+# Nuclear: remove everything unused
+docker system prune -a -f --volumes`,
+      description: "Clean up Docker resources: stopped containers, dangling images, unused volumes, and full system cleanup.",
       language: "bash",
-      userId: "user_001",
+      userId: user.id,
       typeId: "type_command",
-      collectionId: "col_git",
-      tags: ["git", "log", "visualization"],
+      collectionId: terminalCommands.id,
     },
-    {
-      id: "item_015",
-      title: "Git undo last commit",
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_term_process" },
+    update: {},
+    create: {
+      id: "item_term_process",
+      title: "Find and kill process by port",
       contentType: "text",
-      content: "git reset --soft HEAD~1",
-      description: "Undo the last commit while keeping changes staged.",
-      isFavorite: false,
+      content: `# Linux / macOS
+lsof -ti :3000 | xargs kill -9
+
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F`,
+      description: "Find the process listening on a specific port and forcibly terminate it on Linux, macOS, and Windows.",
       language: "bash",
-      userId: "user_001",
+      userId: user.id,
       typeId: "type_command",
-      collectionId: "col_git",
-      tags: ["git", "undo", "reset"],
+      collectionId: terminalCommands.id,
     },
-    {
-      id: "item_016",
-      title: "Git stash pop with conflict resolution",
+  });
+
+  await prisma.item.upsert({
+    where: { id: "item_term_pm" },
+    update: {},
+    create: {
+      id: "item_term_pm",
+      title: "npm audit and update",
       contentType: "text",
-      content: "git stash pop\n# If conflicts arise:\ngit checkout --theirs .\ngit add .\ngit stash drop",
-      description: "Pop stash and resolve merge conflicts by accepting stashed versions.",
-      isFavorite: false,
+      content: `# Check for vulnerabilities
+npm audit
+
+# Auto-fix non-breaking vulnerabilities
+npm audit fix
+
+# Force fix all (may include breaking changes)
+npm audit fix --force
+
+# Check outdated packages
+npm outdated
+
+# Update all packages within semver ranges
+npm update`,
+      description: "npm commands for auditing vulnerabilities, fixing them, checking outdated packages, and updating dependencies.",
       language: "bash",
-      userId: "user_001",
+      userId: user.id,
       typeId: "type_command",
-      collectionId: "col_git",
-      tags: ["git", "stash", "conflicts"],
+      collectionId: terminalCommands.id,
     },
-    {
-      id: "item_017",
-      title: "Git clean untracked files",
-      contentType: "text",
-      content: "git clean -fd",
-      description: "Force remove all untracked files and directories.",
-      isFavorite: false,
-      language: "bash",
-      userId: "user_001",
-      typeId: "type_command",
-      collectionId: "col_git",
-      tags: ["git", "cleanup", "workspace"],
+  });
+  console.log("  Terminal Commands: 4 commands");
+
+  // --- Design Resources ---
+  const designResources = await prisma.collection.upsert({
+    where: { id: "col_design" },
+    update: {},
+    create: {
+      id: "col_design",
+      name: "Design Resources",
+      description: "UI/UX resources and references",
+      userId: user.id,
     },
-  ];
+  });
 
-  const tagMap = new Map<string, string>();
+  await prisma.item.upsert({
+    where: { id: "item_design_tailwind" },
+    update: {},
+    create: {
+      id: "item_design_tailwind",
+      title: "Tailwind CSS Documentation",
+      contentType: "url",
+      content: null,
+      url: "https://tailwindcss.com/docs",
+      description: "Official Tailwind CSS documentation covering utility classes, configuration, and responsive design.",
+      language: null,
+      userId: user.id,
+      typeId: "type_link",
+      collectionId: designResources.id,
+    },
+  });
 
-  for (const item of items) {
-    const { tags, ...itemData } = item;
+  await prisma.item.upsert({
+    where: { id: "item_design_shadcn" },
+    update: {},
+    create: {
+      id: "item_design_shadcn",
+      title: "shadcn/ui Components",
+      contentType: "url",
+      content: null,
+      url: "https://ui.shadcn.com/docs",
+      description: "Beautifully designed components built on Radix UI and Tailwind CSS. Copy, paste, and customize.",
+      language: null,
+      userId: user.id,
+      typeId: "type_link",
+      collectionId: designResources.id,
+    },
+  });
 
-    await prisma.item.upsert({
-      where: { id: item.id },
-      update: {},
-      create: itemData,
-    });
+  await prisma.item.upsert({
+    where: { id: "item_design_radix" },
+    update: {},
+    create: {
+      id: "item_design_radix",
+      title: "Radix UI Primitives",
+      contentType: "url",
+      content: null,
+      url: "https://www.radix-ui.com/primitives",
+      description: "Headless, accessible React primitives for building design systems. Used by shadcn/ui and many component libraries.",
+      language: null,
+      userId: user.id,
+      typeId: "type_link",
+      collectionId: designResources.id,
+    },
+  });
 
-    if (tags) {
-      for (const tagName of tags) {
-        let tagId = tagMap.get(tagName);
-        if (!tagId) {
-          const tag = await prisma.tag.upsert({
-            where: { id: `tag_${tagName.replace(/\s+/g, "_")}` },
-            update: {},
-            create: {
-              id: `tag_${tagName.replace(/\s+/g, "_")}`,
-              name: tagName,
-              userId: "user_001",
-            },
-          });
-          tagId = tag.id;
-          tagMap.set(tagName, tagId);
-        }
+  await prisma.item.upsert({
+    where: { id: "item_design_lucide" },
+    update: {},
+    create: {
+      id: "item_design_lucide",
+      title: "Lucide Icons",
+      contentType: "url",
+      content: null,
+      url: "https://lucide.dev/icons",
+      description: "Beautiful, consistent icon library with 1400+ icons. Tree-shakeable and framework-agnostic.",
+      language: null,
+      userId: user.id,
+      typeId: "type_link",
+      collectionId: designResources.id,
+    },
+  });
+  console.log("  Design Resources: 4 links");
 
-        await prisma.itemTag.upsert({
-          where: { itemId_tagId: { itemId: item.id, tagId } },
-          update: {},
-          create: { itemId: item.id, tagId },
-        });
-      }
-    }
-  }
-
-  console.log("  Items: 17 (with tags)");
-  console.log(`\nSeed complete. ${tagMap.size} unique tags created.`);
+  console.log("\nSeed complete: 1 user, 7 types, 5 collections, 16 items.");
 }
 
 main()

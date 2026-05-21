@@ -1,5 +1,9 @@
 # Prisma + Neon PostgreSQL Setup
 
+## Status
+
+In Progress — see @context/current-feature.md (Stats & Sidebar)
+
 ## Overview
 
 Set up Prisma ORM with Neon PostgreSQL database.
